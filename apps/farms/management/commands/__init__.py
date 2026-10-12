@@ -1,0 +1,3 @@
+"""
+Farms management commands.
+"""
