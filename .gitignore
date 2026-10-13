@@ -51,3 +51,9 @@ staticfiles/
 
 colab_upload.zip
 ml_engine/weights/
+
+notebooks/
+
+data/raw/
+data/processed/
+data/fixtures/
