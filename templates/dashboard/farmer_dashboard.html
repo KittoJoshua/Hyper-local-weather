@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Forecast Dashboard | MicroClimate Kenya{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-3">
+
+  <!-- Location & Plot Selection Portal Header (Wireframe 1) -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white">
+    <div class="card-body p-3 p-md-4">
+      <div class="row align-items-center g-3">
+        <div class="col-md-5">
+          <h4 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-geo-alt-fill text-danger me-2"></i>
+            {% if selected_plot %}{{ selected_plot.name }}{% else %}No Plot Registered{% endif %}
+          </h4>
+          <p class="text-muted small mb-0">
+            {% if selected_plot %}
+              County: <strong>{{ selected_plot.county }}</strong> 
+              {% if selected_plot.sub_county %}| Sub-County: <strong>{{ selected_plot.sub_county }}</strong>{% endif %}
+              | Elevation: <strong>{{ selected_plot.elevation_m }}m</strong>
+              | Crop: <span class="badge bg-success">{{ selected_plot.current_crop.crop_name|default:"General Plot" }}</span>
+            {% else %}
+              Please register your farm plot boundary to activate hyper-local downscaled weather forecasts.
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="col-md-7">
+          <form method="get" class="d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+            {% if plots %}
+            <div class="input-group input-group-sm" style="max-width: 280px;">
+              <span class="input-group-text bg-light"><i class="bi bi-pin-map"></i> Switch Plot</span>
+              <select name="plot" class="form-select" onchange="this.form.submit()">
+                {% for p in plots %}
+                  <option value="{{ p.id }}" {% if selected_plot and selected_plot.id == p.id %}selected{% endif %}>
+                    {{ p.name }} ({{ p.county }})
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+            <a href="{% url 'register_plot' %}" class="btn btn-sm btn-outline-success">
+              <i class="bi bi-plus-circle me-1"></i> Add New Plot
+            </a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if selected_plot and forecast %}
+  <!-- Primary Environmental Metrics (Wireframe 1 Cards) -->
+  <div class="row g-3 mb-4">
+    <!-- Temperature Card -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card card-metric p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="metric-label">Ambient Temperature</div>
+            <div class="metric-value text-danger mt-2">
+              {{ forecast.hourly_forecast.0.temperature_c }}<span class="metric-unit">°C</span>
+            </div>
+          </div>
+          <div class="bg-danger bg-opacity-10 text-danger p-2 rounded-3 fs-3">
+            <i class="bi bi-thermometer-half"></i>
+          </div>
+        </div>
+        <div class="text-muted small mt-2">
+          Downscaled for {{ selected_plot.elevation_m }}m altitude
+        </div>
+      </div>
+    </div>
+
+    <!-- Relative Humidity Card -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card card-metric p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="metric-label">Relative Humidity</div>
+            <div class="metric-value text-primary mt-2">
+              {{ forecast.hourly_forecast.0.humidity_percent }}<span class="metric-unit">%</span>
+            </div>
+          </div>
+          <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3 fs-3">
+            <i class="bi bi-moisture"></i>
+          </div>
+        </div>
+        <div class="text-muted small mt-2">
+          Dewpoint proximity: Normal
+        </div>
+      </div>
+    </div>
+
+    <!-- Precipitation Card -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card card-metric p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="metric-label">Precipitation (Current / Next 24h)</div>
+            <div class="metric-value text-info mt-2">
+              {{ forecast.daily_forecast.0.precipitation_total_mm }}<span class="metric-unit"> mm</span>
+            </div>
+          </div>
+          <div class="bg-info bg-opacity-10 text-info p-2 rounded-3 fs-3">
+            <i class="bi bi-cloud-rain-heavy"></i>
+          </div>
+        </div>
+        <div class="text-muted small mt-2">
+          Rain chance: <strong>{{ forecast.daily_forecast.0.rain_probability }}%</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Input Risk Alerts Card -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card card-metric p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="metric-label">Agronomic Risk Status</div>
+            <div class="metric-value mt-2 {% if alerts %}text-danger{% else %}text-success{% endif %}">
+              {% if alerts %}{{ alerts|length }} Alert{% if alerts|length > 1 %}s{% endif %}{% else %}Optimal{% endif %}
+            </div>
+          </div>
+          <div class="{% if alerts %}bg-danger bg-opacity-10 text-danger{% else %}bg-success bg-opacity-10 text-success{% endif %} p-2 rounded-3 fs-3">
+            <i class="bi {% if alerts %}bi-exclamation-triangle-fill{% else %}bi-check-circle-fill{% endif %}"></i>
+          </div>
+        </div>
+        <div class="text-muted small mt-2">
+          {% if alerts %}Action required for crop inputs{% else %}No critical weather risks flagged{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agronomic Risk Alerts Banner (Wireframe 1) -->
+  {% if alerts %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-danger text-white py-2 px-3 fw-bold d-flex align-items-center">
+          <i class="bi bi-shield-exclamation me-2 fs-5"></i>
+          Active Agricultural Input & Micro-Climate Risk Alerts
+        </div>
+        <div class="card-body p-3">
+          {% for alert in alerts %}
+            <div class="alert-card p-3 mb-2 {% if alert.is_critical %}alert-critical{% else %}alert-high{% endif %}">
+              <div class="d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold mb-1 {% if alert.is_critical %}text-danger{% else %}text-dark{% endif %}">
+                  <i class="bi bi-bell-fill me-1"></i> {{ alert.headline }}
+                </h6>
+                <span class="badge {% if alert.is_critical %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                  {{ alert.severity }}
+                </span>
+              </div>
+              <p class="mb-0 text-secondary small mt-1">
+                {{ alert.agronomic_advice }}
+              </p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Main Visualizations: 72-Hour Chart + Spatial Map Preview -->
+  <div class="row g-3 mb-4">
+    <!-- 72-Hour Micro-Climate Trend Chart -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-graph-up me-2 text-primary"></i> 72-Hour Hourly Downscaled Forecast Trajectory
+          </h6>
+          <span class="badge bg-light text-secondary border">Hybrid LSTM + XGBoost</span>
+        </div>
+        <div class="card-body p-3">
+          <canvas id="forecastTimelineChart" style="max-height: 280px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spatial Plot Boundary Preview Map -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-map me-2 text-success"></i> Farm Plot Boundary Preview
+          </h6>
+          <span class="badge bg-light text-secondary border">{{ selected_plot.size_acres }} Acres</span>
+        </div>
+        <div class="card-body p-3">
+          <div id="plot-mini-map" class="map-preview"></div>
+          <div class="small text-muted mt-2 d-flex justify-content-between">
+            <span>Lat: {{ selected_plot.centroid_lat|floatformat:4 }}</span>
+            <span>Lon: {{ selected_plot.centroid_lon|floatformat:4 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7-Day Forecast Horizon Cards (Wireframe 1 Row) -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-header bg-white border-0 pt-3 pb-2">
+      <h6 class="fw-bold mb-0 text-dark">
+        <i class="bi bi-calendar-week me-2 text-warning"></i> 7-Day Weather Outlook & Rain Windows
+      </h6>
+    </div>
+    <div class="card-body p-3 pt-0">
+      <div class="d-flex flex-nowrap overflow-auto gap-2 pb-2">
+        {% for day in forecast.daily_forecast %}
+        <div class="forecast-day-card flex-fill">
+          <div class="fw-bold text-dark mb-1">{{ day.day_name }}</div>
+          <div class="text-muted small mb-2">{{ day.date|slice:"5:" }}</div>
+          <div class="fs-3 mb-1">
+            {% if "Rain" in day.condition %}
+              <i class="bi bi-cloud-rain-fill text-primary"></i>
+            {% elif "Showers" in day.condition %}
+              <i class="bi bi-cloud-drizzle-fill text-info"></i>
+            {% else %}
+              <i class="bi bi-brightness-high-fill text-warning"></i>
+            {% endif %}
+          </div>
+          <div class="small fw-semibold text-dark">{{ day.condition }}</div>
+          <div class="small text-secondary mt-1">
+            <span class="text-danger fw-bold">{{ day.temp_max }}°</span> / 
+            <span class="text-primary">{{ day.temp_min }}°</span>
+          </div>
+          <div class="badge bg-light text-dark border mt-2 small">
+            💧 {{ day.precipitation_total_mm }}mm ({{ day.rain_probability }}%)
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Empty State for New Farmers without Plots -->
+  <div class="row justify-content-center py-5">
+    <div class="col-md-7 col-lg-5 text-center">
+      <div class="bg-white p-5 rounded-4 shadow-sm">
+        <div class="text-success mb-3">
+          <i class="bi bi-pin-map-fill" style="font-size: 3.5rem;"></i>
+        </div>
+        <h4 class="fw-bold">No Farm Plot Registered Yet</h4>
+        <p class="text-muted small">
+          To generate high-resolution sub-kilometer micro-climate forecasts tailored to your exact soil and terrain elevation, add your farm plot on our interactive map.
+        </p>
+        <a href="{% url 'register_plot' %}" class="btn btn-success fw-semibold mt-2 px-4 py-2 shadow-sm">
+          <i class="bi bi-plus-lg me-1"></i> Register Your First Plot
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if selected_plot and forecast %}
+<script>
+  // 1. Render 72-Hour Forecast Chart
+  const hourlyData = JSON.parse('{{ hourly_json|escapejs }}');
+  if (hourlyData.length > 0) {
+    const labels = hourlyData.map(d => d.hour_label);
+    const temps = hourlyData.map(d => d.temperature_c);
+    const humidity = hourlyData.map(d => d.humidity_percent);
+    const rain = hourlyData.map(d => d.precipitation_mm);
+
+    const ctx = document.getElementById('forecastTimelineChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Temperature (°C)',
+            data: temps,
+            borderColor: '#e63946',
+            backgroundColor: 'rgba(230, 57, 70, 0.1)',
+            yAxisID: 'yTemp',
+            tension: 0.35,
+            borderWidth: 2,
+            pointRadius: 2
+          },
+          {
+            label: 'Precipitation (mm)',
+            data: rain,
+            type: 'bar',
+            backgroundColor: 'rgba(69, 123, 157, 0.65)',
+            borderColor: '#457b9d',
+            yAxisID: 'yRain',
+            borderWidth: 1
+          },
+          {
+            label: 'Humidity (%)',
+            data: humidity,
+            borderColor: '#2a9d8f',
+            borderDash: [4, 4],
+            yAxisID: 'yHumidity',
+            tension: 0.3,
+            borderWidth: 1.5,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { grid: { display: false } },
+          yTemp: {
+            type: 'linear',
+            position: 'left',
+            title: { display: true, text: 'Temp (°C)' },
+            suggestedMin: 8,
+            suggestedMax: 32
+          },
+          yRain: {
+            type: 'linear',
+            position: 'right',
+            title: { display: true, text: 'Rain (mm)' },
+            grid: { display: false },
+            suggestedMin: 0,
+            suggestedMax: 20
+          },
+          yHumidity: {
+            display: false,
+            suggestedMin: 20,
+            suggestedMax: 100
+          }
+        }
+      }
+    });
+  }
+
+  // 2. Render Leaflet Mini Map Preview
+  const plotLat = {{ selected_plot.centroid_lat }};
+  const plotLon = {{ selected_plot.centroid_lon }};
+  const miniMap = L.map('plot-mini-map').setView([plotLat, plotLon], 14);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(miniMap);
+
+  // Add marker
+  const marker = L.marker([plotLat, plotLon]).addTo(miniMap);
+  marker.bindPopup("<strong>{{ selected_plot.name }}</strong><br>Centroid Coordinate").openPopup();
+
+  // Draw polygon boundary if present
+  {% if selected_plot.boundary_geojson %}
+    const boundaryPoints = {{ selected_plot.boundary_geojson|safe }};
+    if (boundaryPoints && boundaryPoints.length > 2) {
+      const polygon = L.polygon(boundaryPoints, { color: '#2d6a4f', fillColor: '#52b788', fillOpacity: 0.4 }).addTo(miniMap);
+      miniMap.fitBounds(polygon.getBounds());
+    }
+  {% endif %}
+</script>
+{% endif %}
+{% endblock %}
