@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}My Farm Plots | MicroClimate Kenya{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">My Registered Farm Plots</h4>
+      <p class="text-muted small mb-0">Overview of your parcels, associated crop profiles, and coordinates</p>
+    </div>
+    <a href="{% url 'register_plot' %}" class="btn btn-success fw-semibold shadow-sm">
+      <i class="bi bi-plus-lg me-1"></i> Register New Plot
+    </a>
+  </div>
+
+  <div class="row g-3">
+    {% if plots %}
+      {% for plot in plots %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <h5 class="fw-bold mb-1 text-dark">{{ plot.name }}</h5>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+              {{ plot.size_acres }} Acres
+            </span>
+          </div>
+          <p class="text-secondary small mb-2">
+            <i class="bi bi-geo-alt"></i> {{ plot.county }}{% if plot.sub_county %}, {{ plot.sub_county }}{% endif %}
+          </p>
+
+          <div class="bg-light p-3 rounded-3 my-2 small">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-muted">Current Crop:</span>
+              <strong class="text-dark">{{ plot.current_crop.crop_name|default:"Not specified" }}</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-muted">Elevation:</span>
+              <strong>{{ plot.elevation_m }} meters</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Centroid:</span>
+              <span>{{ plot.centroid_lat|floatformat:4 }}, {{ plot.centroid_lon|floatformat:4 }}</span>
+            </div>
+          </div>
+
+          <div class="mt-auto pt-2">
+            <a href="{% url 'dashboard' %}?plot={{ plot.id }}" class="btn btn-outline-success w-100 btn-sm fw-semibold">
+              <i class="bi bi-speedometer2 me-1"></i> View Weather Forecast
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12 text-center py-5">
+        <div class="bg-white p-5 rounded-4 shadow-sm">
+          <i class="bi bi-geo-alt fs-1 text-secondary mb-3 d-block"></i>
+          <h5>No Farm Plots Registered</h5>
+          <p class="text-muted small">You haven't added any farm plot coordinates to your account yet.</p>
+          <a href="{% url 'register_plot' %}" class="btn btn-success fw-semibold">Register Plot Now</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

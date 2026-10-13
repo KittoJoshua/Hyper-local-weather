@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Registration | MicroClimate Kenya{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+          <div class="text-center mb-4">
+            <h3 class="fw-bold">Create Farmer Account</h3>
+            <p class="text-muted small">Join Kenya's micro-climate forecasting and agronomic advisory network</p>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold">First Name</label>
+                <input type="text" name="first_name" class="form-control" placeholder="Joshua">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold">Last Name</label>
+                <input type="text" name="last_name" class="form-control" placeholder="Kitto">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="e.g. kitto_farmer" required>
+              </div>
+
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold">Mobile Phone Number (Kenya)</label>
+                <input type="tel" name="phone_number" class="form-control" placeholder="0712345678" required>
+                <div class="form-text small">Used for profile authentication</div>
+              </div>
+
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold">Email Address</label>
+                <input type="email" name="email" class="form-control" placeholder="farmer@example.com" required>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Primary Farming County</label>
+                <select name="county" class="form-select" required>
+                  <option value="Nakuru" selected>Nakuru</option>
+                  <option value="Kericho">Kericho</option>
+                  <option value="Uasin Gishu">Uasin Gishu</option>
+                  <option value="Embu">Embu</option>
+                  <option value="Kiambu">Kiambu</option>
+                  <option value="Trans Nzoia">Trans Nzoia</option>
+                  <option value="Nandi">Nandi</option>
+                  <option value="Meru">Meru</option>
+                  <option value="Machakos">Machakos</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" required>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <button type="submit" class="btn btn-success w-100 py-2 fw-semibold shadow-sm">
+                Complete Registration
+              </button>
+            </div>
+          </form>
+
+          <div class="text-center mt-4 pt-3 border-top">
+            <p class="text-muted small mb-0">Already registered? 
+              <a href="{% url 'login' %}" class="text-success fw-bold text-decoration-none">Sign In</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

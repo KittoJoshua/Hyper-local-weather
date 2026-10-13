@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Register Farm Plot | MicroClimate Kenya{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="row justify-content-center">
+    <div class="col-xl-11">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h4 class="fw-bold mb-1"><i class="bi bi-geo-alt-fill text-success me-2"></i>Register Farm Plot</h4>
+              <p class="text-muted small mb-0">Click on the interactive map to pin your plot centroid or trace your farm boundary corners</p>
+            </div>
+            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          <form method="post" id="plotForm">
+            {% csrf_token %}
+            <div class="row g-4">
+              <!-- Interactive Leaflet Map Column (Wireframe 2) -->
+              <div class="col-lg-7">
+                <div class="border rounded-3 p-2 bg-light">
+                  <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                    <span class="small fw-semibold text-secondary">
+                      <i class="bi bi-cursor-fill me-1"></i> Interactive Map Anchoring Interface
+                    </span>
+                    <button type="button" class="btn btn-xs btn-outline-danger" id="btnClearMap">
+                      <i class="bi bi-trash"></i> Reset Boundary
+                    </button>
+                  </div>
+                  <div id="map-canvas" style="height: 420px; border-radius: 8px;"></div>
+                  <div class="small text-muted mt-2 d-flex justify-content-between px-1">
+                    <span>* Click multiple times to delineate boundary polygon corners</span>
+                    <span id="pointCountBadge" class="badge bg-secondary">0 points</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Farm Details Form Column (Wireframe 2) -->
+              <div class="col-lg-5">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label small fw-semibold">Plot Name / Label</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Upper Hill Maize Parcel" required>
+                  </div>
+
+                  <div class="col-sm-6">
+                    <label class="form-label small fw-semibold">Primary Crop Grown</label>
+                    <select name="current_crop" class="form-select" required>
+                      <option value="">-- Select Crop --</option>
+                      {% for crop in crops %}
+                        <option value="{{ crop.id }}">{{ crop.crop_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-sm-6">
+                    <label class="form-label small fw-semibold">Estimated Area (Acres)</label>
+                    <input type="number" step="0.01" name="size_acres" id="sizeAcres" class="form-control" value="1.50" required>
+                  </div>
+
+                  <div class="col-sm-6">
+                    <label class="form-label small fw-semibold">County</label>
+                    <select name="county" id="countySelect" class="form-select">
+                      <option value="Nakuru" selected>Nakuru</option>
+                      <option value="Kericho">Kericho</option>
+                      <option value="Uasin Gishu">Uasin Gishu</option>
+                      <option value="Embu">Embu</option>
+                      <option value="Kiambu">Kiambu</option>
+                      <option value="Trans Nzoia">Trans Nzoia</option>
+                      <option value="Nandi">Nandi</option>
+                    </select>
+                  </div>
+
+                  <div class="col-sm-6">
+                    <label class="form-label small fw-semibold">Sub-County / Ward</label>
+                    <input type="text" name="sub_county" class="form-control" placeholder="e.g. Njoro / Mau Narok">
+                  </div>
+
+                  <div class="col-sm-6">
+                    <label class="form-label small fw-semibold">Centroid Latitude</label>
+                    <input type="number" step="0.000001" name="centroid_lat" id="centroidLat" class="form-control" value="-0.354000" required readonly>
+                  </div>
+
+                  <div class="col-sm-6">
+                    <label class="form-label small fw-semibold">Centroid Longitude</label>
+                    <input type="number" step="0.000001" name="centroid_lon" id="centroidLon" class="form-control" value="35.942000" required readonly>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label small fw-semibold">Elevation Above Sea Level (Meters)</label>
+                    <div class="input-group">
+                      <input type="number" step="1" name="elevation_m" id="elevationM" class="form-control" value="2150" required>
+                      <span class="input-group-text bg-light text-muted">m</span>
+                    </div>
+                    <div class="form-text small">Micro-climate model dynamically adjusts lapse-rate temperatures based on altitude</div>
+                  </div>
+
+                  <!-- Hidden Boundary GeoJSON storage -->
+                  <input type="hidden" name="boundary_geojson" id="boundaryGeoJSON" value="[]">
+
+                  <div class="col-12 mt-4 pt-2">
+                    <div class="d-flex gap-2">
+                      <a href="{% url 'dashboard' %}" class="btn btn-light w-50 py-2">Cancel</a>
+                      <button type="submit" class="btn btn-success w-50 py-2 fw-semibold shadow-sm">
+                        <i class="bi bi-check-lg me-1"></i> Save Farm Plot
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let map, marker, polygonLayer;
+  let clickedPoints = [];
+
+  // Regional coordinates map center
+  const initialCenter = [-0.354, 35.942]; // Nakuru / Njoro default
+
+  map = L.map('map-canvas').setView(initialCenter, 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  marker = L.marker(initialCenter, { draggable: true }).addTo(map);
+  marker.on('dragend', function(e) {
+    const pos = marker.getLatLng();
+    updateCentroid(pos.lat, pos.lng);
+  });
+
+  function updateCentroid(lat, lon) {
+    document.getElementById('centroidLat').value = lat.toFixed(6);
+    document.getElementById('centroidLon').value = lon.toFixed(6);
+  }
+
+  // Click on map to trace polygon
+  map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    clickedPoints.push([lat, lng]);
+
+    document.getElementById('pointCountBadge').textContent = `${clickedPoints.length} points`;
+    document.getElementById('boundaryGeoJSON').value = JSON.stringify(clickedPoints);
+
+    if (clickedPoints.length === 1) {
+      marker.setLatLng([lat, lng]);
+      updateCentroid(lat, lng);
+    } else {
+      if (polygonLayer) map.removeLayer(polygonLayer);
+      polygonLayer = L.polygon(clickedPoints, { color: '#2d6a4f', fillColor: '#52b788', fillOpacity: 0.35 }).addTo(map);
+      
+      // Calculate centroid
+      const avgLat = clickedPoints.reduce((acc, p) => acc + p[0], 0) / clickedPoints.length;
+      const avgLng = clickedPoints.reduce((acc, p) => acc + p[1], 0) / clickedPoints.length;
+      marker.setLatLng([avgLat, avgLng]);
+      updateCentroid(avgLat, avgLng);
+    }
+  });
+
+  document.getElementById('btnClearMap').addEventListener('click', function() {
+    clickedPoints = [];
+    if (polygonLayer) map.removeLayer(polygonLayer);
+    document.getElementById('pointCountBadge').textContent = '0 points';
+    document.getElementById('boundaryGeoJSON').value = '[]';
+  });
+
+  // County change repositioning
+  document.getElementById('countySelect').addEventListener('change', function(e) {
+    const county = e.target.value;
+    const countyCoords = {
+      "Nakuru": [-0.354, 35.942, 2150],
+      "Kericho": [-0.369, 35.286, 2180],
+      "Uasin Gishu": [0.514, 35.269, 2095],
+      "Embu": [-0.428, 37.558, 1500],
+      "Kiambu": [-1.171, 36.835, 1720],
+      "Trans Nzoia": [1.016, 35.006, 1890],
+      "Nandi": [0.183, 35.126, 2000]
+    };
+    if (countyCoords[county]) {
+      const [lat, lng, elev] = countyCoords[county];
+      map.setView([lat, lng], 13);
+      marker.setLatLng([lat, lng]);
+      updateCentroid(lat, lng);
+      document.getElementById('elevationM').value = elev;
+    }
+  });
+</script>
+{% endblock %}
