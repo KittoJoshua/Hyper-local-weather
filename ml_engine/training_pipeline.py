@@ -96,7 +96,7 @@ def run_training_and_benchmarking(
 
         # 5b. Standalone LSTM
         fast_lstm_params = LSTM_PARAMS.copy()
-        fast_lstm_params["epochs"] = 12
+        fast_lstm_params["epochs"] = 3 if (max_records and max_records <= 4000) else 12
         lstm_standalone = MicroClimateLSTM(input_size=len(base_features), output_size=len(TARGET_VARIABLES), params=fast_lstm_params)
         lstm_standalone.fit(X_seq_train, y_seq_train)
         lstm_preds = lstm_standalone.predict(X_seq_test)
