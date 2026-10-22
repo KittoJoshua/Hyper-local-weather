@@ -5,6 +5,11 @@
 **Degree Program:** Bachelor of Science in Informatics and Computer Science  
 **Faculty:** School of Computing and Engineering Sciences, Strathmore University, Nairobi, Kenya  
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KittoJoshua/Hyper-local-weather/blob/main/notebooks/train_in_colab.ipynb)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Django 5.2](https://img.shields.io/badge/Django-5.2-green.svg)](https://www.djangoproject.com/)
+[![Weather API: Open-Meteo](https://img.shields.io/badge/Data%20Source-Open--Meteo-brightgreen.svg)](https://open-meteo.com)
+
 ---
 
 ## 1. Project Overview & Context
@@ -113,11 +118,18 @@ python manage.py test tests
 ```
 Executes all unit, GIS polygon centroid, rules engine, and ML walk-forward tests.
 
-### 5. Train / Benchmark Machine Learning Models
-```bash
-python -m ml_engine.training_pipeline
-```
-Executes walk-forward backtesting across all architectures and serializes trained production weights to `ml_engine/weights/`.
+### 5. Machine Learning Models & Training Workflow
+> **Note:** Production-trained model weights are already committed in `ml_engine/weights/`. The platform runs forecasts and evaluation benchmarks immediately out-of-the-box without requiring you to retrain first.
+
+To retrain or benchmark the models yourself:
+- **Cloud GPU Training (Recommended):**  
+  Click the [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KittoJoshua/Hyper-local-weather/blob/main/notebooks/train_in_colab.ipynb) badge to run [`train_in_colab.ipynb`](file:///c:/Users/kitto/Desktop/hyper-local%20weather/notebooks/train_in_colab.ipynb) on a free NVIDIA T4 GPU. Training multi-epoch LSTMs and XGBoost across 47,450 records finishes in ~3–5 minutes.
+- **Fast Local Smoke-Test (CPU):**  
+  To verify the training and walk-forward validation pipeline locally on CPU:
+  ```bash
+  python -m ml_engine.training_pipeline --records 2190
+  ```
+  *(Finishes in ~15 seconds on standard laptop CPUs).*
 
 ### 6. Start the Development Server
 ```bash
