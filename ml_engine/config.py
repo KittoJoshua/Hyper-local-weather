@@ -1,7 +1,12 @@
 """
 Configuration settings for the Micro-Climate Machine Learning Engine.
-Defines parameters for data ingestion, feature engineering, models (LSTM, XGBoost, Hybrid),
-and walk-forward validation.
+
+Defines comprehensive architectural constants and parameters:
+- Forecast Targets: Continuous multi-output predictions (Temperature, Relative Humidity, Precipitation).
+- Temporal Horizons: 72-hour hourly sequential output and 7-day daily agricultural projections.
+- Deep Learning Windows: 336 hours (14-day chronological lookback) for LSTM recurrent hidden states.
+- High-Dimensional Tabular Features: 9 lag intervals (t-1 to t-168) and rolling statistics (6h, 12h, 24h, 72h).
+- Agronomic Alert Thresholds: Empirically calibrated for Kenyan agro-ecological farming zones.
 """
 from pathlib import Path
 
