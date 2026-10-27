@@ -1,7 +1,12 @@
 """
 Data Preprocessing, Imputation, and Scaling Module.
-Implements statistical imputation without data leakage and cyclical transforms
-for diurnal and bimodal seasonality.
+
+Implements rigorous data preparation adhering to time-series best practices:
+- Leakage-Free Imputation: Sequential forward-fill followed by rolling median smoothing.
+- Physical Bound Constraints: Enforces non-negativity for precipitation (>= 0mm) and realistic atmospheric spans.
+- Cyclical Harmonic Encodings: Sine and cosine trigonometric mappings of hour-of-day (24h diurnal curve)
+  and day-of-year (365d annual cycle) capturing Kenya's bimodal tropical rainfall calendars.
+- MinMax Normalization: Dual-scaler normalization preserving separate inverse transforms for target evaluation.
 """
 import numpy as np
 import pandas as pd
