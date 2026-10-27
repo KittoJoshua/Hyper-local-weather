@@ -1,5 +1,10 @@
 """
 Farm Plot and Crop Profile Database Models with Spatial Coordinates and Elevation.
+
+Provides core spatial and agronomic primitives:
+- CropProfile: Physiological temperature/rainfall thresholds for Kenyan crops.
+- FarmPlot: Smallholder parcel spatial centroids, GeoJSON polygons, and terrain elevation
+            used for topographical lapse rate downscaling in the ML engine.
 """
 from django.db import models
 from django.conf import settings
@@ -9,6 +14,7 @@ import json
 class CropProfile(models.Model):
     """
     Agronomic metadata defining physiological tolerances for staple Kenyan crops.
+    Used by the AgronomicRulesEngine to generate targeted advisory alerts (e.g. washout, desiccation).
     """
     crop_name = models.CharField(max_length=100, unique=True)
     optimal_temp_min = models.DecimalField(max_digits=5, decimal_places=2, help_text="Minimum optimal temperature (C)")
