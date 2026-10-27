@@ -1,6 +1,11 @@
 """
-Advisory Alert Database Models.
-Stores machine-generated actionable agronomic intelligence and input risk warnings.
+Agronomic Advisory Alert Database Models.
+
+Stores machine-generated actionable intelligence triggered by downscaled micro-climate thresholds:
+- Fertilizer Washout: Detects heavy convective precipitation (> 20mm/48h) to protect top-dressing inputs.
+- Seed Desiccation: Warns against high heat (> 29.5C) with dry topsoil during sowing windows.
+- Fungal Pathogens: Monitors prolonged relative humidity (> 80%) for rust, blight, and aflatoxin hazards.
+- Optimal Spraying: Identifies low-wind (< 3.5 m/s), rain-free windows for chemical efficacy.
 """
 from django.db import models
 from apps.farms.models import FarmPlot
@@ -10,6 +15,7 @@ from apps.forecasting.models import ForecastLog
 class AdvisoryAlert(models.Model):
     """
     Actionable agricultural advisory triggered by forecasted micro-climatic thresholds.
+    Links directly to smallholder farm plots and underlying forecast timelines.
     """
     class AlertType(models.TextChoices):
         FERTILIZER_WASHOUT = "FERTILIZER_WASHOUT", "Fertilizer Leaching / Washout Risk"
