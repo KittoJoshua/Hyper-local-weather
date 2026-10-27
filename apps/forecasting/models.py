@@ -1,7 +1,11 @@
 """
-Model Registry and Forecast Log Entities.
-Tracks Machine Learning versions, hyperparameters, benchmark metrics,
-and downscaled prediction outputs.
+Model Registry and Forecast Log Entities for MLOps Tracking.
+
+Maintains end-to-end MLOps lifecycle governance:
+- ModelRegistry: Versioned model artifacts, algorithm types (LSTM, XGBoost, Hybrid),
+                 hyperparameter payloads, and walk-forward validation benchmark metrics (RMSE, MAE, R²).
+- ForecastLog: Historical audit trail of downscaled predictions produced per farm plot
+               across 72-hour and 7-day forecast horizons.
 """
 from django.db import models
 from apps.farms.models import FarmPlot
@@ -10,6 +14,7 @@ from apps.farms.models import FarmPlot
 class ModelRegistry(models.Model):
     """
     Registry of trained Machine Learning models with cross-validation scores.
+    Used by the Admin ML Control Panel and inference engine for active model routing.
     """
     model_name = models.CharField(max_length=100)
     version_tag = models.CharField(max_length=50, unique=True)
