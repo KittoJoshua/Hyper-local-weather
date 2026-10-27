@@ -1,6 +1,10 @@
 """
 Meteorological Station and Chronological Climate Records Models.
-Engineered for TimescaleDB hypertable partitioning on `recorded_at`.
+
+Engineered for high-throughput time-series telemetry and TimescaleDB hypertable partitioning:
+- MeteorologicalStation: Regional ground observation nodes across Kenyan agro-climatic zones.
+- ClimateRecord: Hourly meteorological records partitioned on `recorded_at` with composite indices
+  for high-performance historical range queries and ML training set extraction.
 """
 from django.db import models
 from apps.farms.models import FarmPlot
@@ -9,6 +13,7 @@ from apps.farms.models import FarmPlot
 class MeteorologicalStation(models.Model):
     """
     Physical or virtual meteorological observation node in Kenya.
+    Represents regional anchor points for micro-climate calibration and downscaling.
     """
     station_name = models.CharField(max_length=150, unique=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
