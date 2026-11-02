@@ -1,15 +1,22 @@
 """
 Statistical Baseline Models for Micro-Climate Forecasting Benchmarking.
-Implements Persistence and Historical Rolling Average models as required by
-Specific Objective (v) for academic comparative verification.
+
+Implements standard benchmark models fulfilling Strathmore Capstone Specific Objective (v):
+- Naive Persistence Baseline: Assumes atmospheric conditions remain static over horizon h:
+  y_{t+h} = y_t
+- Historical Rolling Average Baseline: Calculates moving average over trailing window W:
+  \hat{y}_{t+h} = \frac{1}{W} \sum_{i=0}^{W-1} y_{t-i}
+Establishes minimum performance baselines (RMSE, MAE, R²) against which advanced LSTM,
+XGBoost, and Hybrid architectures are benchmarked during walk-forward validation.
 """
 import numpy as np
 
 
 class PersistenceModel:
     """
-    Persistence Baseline: Predicts that atmospheric conditions at t + h
-    will be identical to conditions at t (y_{t+h} = y_t).
+    Naive Persistence Baseline Forecaster.
+    Projects the most recent observed meteorological vector forward across all forecast horizons.
+    Serves as the primary null hypothesis benchmark in time-series evaluation.
     """
 
     def __init__(self):
