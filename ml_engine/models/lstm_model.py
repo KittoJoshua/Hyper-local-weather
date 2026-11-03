@@ -1,6 +1,14 @@
 """
-Long Short-Term Memory (LSTM) Deep Learning Model for Temporal Weather Sequences.
-Captures seasonal auto-correlation and multi-day climatic cycles using PyTorch.
+Long Short-Term Memory (LSTM) Deep Learning Architecture for Weather Sequences.
+
+Implements Stage 1 of the two-stage hybrid predictive architecture:
+- Recurrent Sequence Modeling: Captures long-range temporal dependencies across multi-day
+  sliding windows (336 hours / 14 days lookback) through gated memory cells (input, forget, output gates).
+- Multi-Horizon Continuous Output: Projects final recurrent hidden states into simultaneous
+  predictions for temperature (°C), relative humidity (%), and rainfall (mm):
+  \hat{y}_{\text{LSTM}} = W_2 \cdot \text{ReLU}(W_1 \cdot h_T + b_1) + b_2
+- Hardware Acceleration: Transparent device routing across NVIDIA CUDA GPUs (Google Colab T4)
+  and CPU execution for inference.
 """
 import os
 import torch
