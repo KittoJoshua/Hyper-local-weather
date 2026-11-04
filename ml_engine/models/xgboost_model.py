@@ -1,7 +1,14 @@
 """
-XGBoost Regression Model for Micro-Climate Weather Variables.
-Handles multi-variable prediction (temperature, humidity, precipitation)
-using gradient-boosted decision trees with optimized objective functions.
+XGBoost Gradient-Boosted Residual Correction Model for Micro-Climate Variables.
+
+Implements Stage 2 of the two-stage hybrid predictive architecture:
+- Residual Error Learning: Fits gradient-boosted decision trees to predict systematic LSTM residuals:
+  e_XGB = y - y_LSTM
+- High-Dimensional Tabular Features: Exploits terrain elevation, lag sequences (t-1 to t-168),
+  and rolling window statistics unavailable to pure sequence models.
+- Task-Specific Objectives: Tweedie deviance loss for zero-inflated precipitation;
+  squared error regression for temperature and relative humidity.
+- Composite Final Forecast: y_Final = y_LSTM + e_XGB
 """
 import os
 import joblib
