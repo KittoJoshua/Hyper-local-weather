@@ -11,7 +11,8 @@
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h4 class="fw-bold mb-1"><i class="bi bi-geo-alt-fill text-success me-2"></i>Register Farm Plot</h4>
-              <p class="text-muted small mb-0">Click on the interactive map to pin your plot centroid or trace your farm boundary corners</p>
+              <p class="text-muted small mb-0">Click on the interactive map to pin your plot centroid or trace your farm
+                boundary corners</p>
             </div>
             <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
@@ -47,7 +48,8 @@
                 <div class="row g-3">
                   <div class="col-12">
                     <label class="form-label small fw-semibold">Plot Name / Label</label>
-                    <input type="text" name="name" class="form-control" placeholder="e.g. Upper Hill Maize Parcel" required>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Upper Hill Maize Parcel"
+                      required>
                   </div>
 
                   <div class="col-sm-6">
@@ -55,14 +57,15 @@
                     <select name="current_crop" class="form-select" required>
                       <option value="">-- Select Crop --</option>
                       {% for crop in crops %}
-                        <option value="{{ crop.id }}">{{ crop.crop_name }}</option>
+                      <option value="{{ crop.id }}">{{ crop.crop_name }}</option>
                       {% endfor %}
                     </select>
                   </div>
 
                   <div class="col-sm-6">
                     <label class="form-label small fw-semibold">Estimated Area (Acres)</label>
-                    <input type="number" step="0.01" name="size_acres" id="sizeAcres" class="form-control" value="1.50" required>
+                    <input type="number" step="0.01" name="size_acres" id="sizeAcres" class="form-control" value="1.50"
+                      required>
                   </div>
 
                   <div class="col-sm-6">
@@ -85,21 +88,25 @@
 
                   <div class="col-sm-6">
                     <label class="form-label small fw-semibold">Centroid Latitude</label>
-                    <input type="number" step="0.000001" name="centroid_lat" id="centroidLat" class="form-control" value="-0.354000" required readonly>
+                    <input type="number" step="0.000001" name="centroid_lat" id="centroidLat" class="form-control"
+                      value="-0.354000" required readonly>
                   </div>
 
                   <div class="col-sm-6">
                     <label class="form-label small fw-semibold">Centroid Longitude</label>
-                    <input type="number" step="0.000001" name="centroid_lon" id="centroidLon" class="form-control" value="35.942000" required readonly>
+                    <input type="number" step="0.000001" name="centroid_lon" id="centroidLon" class="form-control"
+                      value="35.942000" required readonly>
                   </div>
 
                   <div class="col-12">
                     <label class="form-label small fw-semibold">Elevation Above Sea Level (Meters)</label>
                     <div class="input-group">
-                      <input type="number" step="1" name="elevation_m" id="elevationM" class="form-control" value="2150" required>
+                      <input type="number" step="1" name="elevation_m" id="elevationM" class="form-control" value="2150"
+                        required>
                       <span class="input-group-text bg-light text-muted">m</span>
                     </div>
-                    <div class="form-text small">Micro-climate model dynamically adjusts lapse-rate temperatures based on altitude</div>
+                    <div class="form-text small">Micro-climate model dynamically adjusts lapse-rate temperatures based
+                      on altitude</div>
                   </div>
 
                   <!-- Hidden Boundary GeoJSON storage -->
@@ -133,12 +140,17 @@
   const initialCenter = [-0.354, 35.942]; // Nakuru / Njoro default
 
   map = L.map('map-canvas').setView(initialCenter, 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
   }).addTo(map);
 
+  // Force redraw after the card layout is painted
+  setTimeout(function () { map.invalidateSize(); }, 200);
+
   marker = L.marker(initialCenter, { draggable: true }).addTo(map);
-  marker.on('dragend', function(e) {
+  marker.on('dragend', function (e) {
     const pos = marker.getLatLng();
     updateCentroid(pos.lat, pos.lng);
   });
@@ -149,7 +161,7 @@
   }
 
   // Click on map to trace polygon
-  map.on('click', function(e) {
+  map.on('click', function (e) {
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
     clickedPoints.push([lat, lng]);
@@ -163,7 +175,7 @@
     } else {
       if (polygonLayer) map.removeLayer(polygonLayer);
       polygonLayer = L.polygon(clickedPoints, { color: '#2d6a4f', fillColor: '#52b788', fillOpacity: 0.35 }).addTo(map);
-      
+
       // Calculate centroid
       const avgLat = clickedPoints.reduce((acc, p) => acc + p[0], 0) / clickedPoints.length;
       const avgLng = clickedPoints.reduce((acc, p) => acc + p[1], 0) / clickedPoints.length;
@@ -172,7 +184,7 @@
     }
   });
 
-  document.getElementById('btnClearMap').addEventListener('click', function() {
+  document.getElementById('btnClearMap').addEventListener('click', function () {
     clickedPoints = [];
     if (polygonLayer) map.removeLayer(polygonLayer);
     document.getElementById('pointCountBadge').textContent = '0 points';
@@ -180,7 +192,7 @@
   });
 
   // County change repositioning
-  document.getElementById('countySelect').addEventListener('change', function(e) {
+  document.getElementById('countySelect').addEventListener('change', function (e) {
     const county = e.target.value;
     const countyCoords = {
       "Nakuru": [-0.354, 35.942, 2150],

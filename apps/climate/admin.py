@@ -13,6 +13,7 @@ class MeteorologicalStationAdmin(admin.ModelAdmin):
 
 @admin.register(ClimateRecord)
 class ClimateRecordAdmin(admin.ModelAdmin):
-    list_display = ("recorded_at", "farmplot", "station", "temperature_c", "humidity_percent", "precipitation_mm")
-    list_filter = ("recorded_at", "farmplot__county")
+    list_display = ("recorded_at", "station", "farmplot", "temperature_c", "humidity_percent", "precipitation_mm")
+    list_filter = ("station", "farmplot__county", "recorded_at")
     date_hierarchy = "recorded_at"
+    list_per_page = 50

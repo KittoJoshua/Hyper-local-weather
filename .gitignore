@@ -52,7 +52,10 @@ staticfiles/
 colab_upload.zip
 ml_engine/weights/
 
-notebooks/
+# Allow training notebooks in version control
+!notebooks/
+!notebooks/*
+!train_in_colab.ipynb
 
 data/raw/
 data/processed/

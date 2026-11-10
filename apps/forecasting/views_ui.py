@@ -72,6 +72,8 @@ def admin_ml_panel(request):
     benchmark_report = None
     import os
     from ml_engine.config import WEIGHTS_DIR
+    from apps.climate.models import MeteorologicalStation, ClimateRecord
+    from django.db.models import Count, Max, Min, Avg
     json_path = WEIGHTS_DIR / "model_benchmark_report.json"
     if json_path.exists():
         try:
@@ -141,10 +143,41 @@ def admin_ml_panel(request):
     models_list = ModelRegistry.objects.all()
     active_model = models_list.filter(is_active=True).first()
 
+    # Build real dataset stats from the database for the admin panel table and inspection modals
+    dataset_stats = []
+    for station in MeteorologicalStation.objects.filter(is_active=True).order_by("county"):
+        agg = ClimateRecord.objects.filter(station=station).aggregate(
+            count=Count("id"),
+            latest=Max("recorded_at"),
+            earliest=Min("recorded_at"),
+            avg_temp=Avg("temperature_c"),
+            avg_humidity=Avg("humidity_percent"),
+        )
+        recent_samples = list(
+            ClimateRecord.objects.filter(station=station)
+            .order_by("-recorded_at")[:5]
+            .values("recorded_at", "temperature_c", "humidity_percent", "precipitation_mm", "wind_speed_ms")
+        )
+        dataset_stats.append({
+            "station_id": station.id,
+            "station_name": station.station_name,
+            "county": station.county,
+            "elevation_m": station.elevation_m,
+            "latitude": station.latitude,
+            "longitude": station.longitude,
+            "record_count": agg["count"] or 0,
+            "latest_at": agg["latest"],
+            "earliest_at": agg["earliest"],
+            "avg_temp": round(float(agg["avg_temp"]), 1) if agg["avg_temp"] else None,
+            "avg_humidity": round(float(agg["avg_humidity"]), 1) if agg["avg_humidity"] else None,
+            "recent_samples": recent_samples,
+        })
+
     context = {
         "models": models_list,
         "active_model": active_model,
         "benchmark_report": benchmark_report,
         "benchmark_rows": benchmark_rows,
+        "dataset_stats": dataset_stats,
     }
     return render(request, "admin_panel/model_management.html", context)

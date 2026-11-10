@@ -340,26 +340,34 @@
   }
 
   // 2. Render Leaflet Mini Map Preview
-  const plotLat = {{ selected_plot.centroid_lat }};
-  const plotLon = {{ selected_plot.centroid_lon }};
-  const miniMap = L.map('plot-mini-map').setView([plotLat, plotLon], 14);
+  const plotLat = parseFloat("{{ selected_plot.centroid_lat }}");
+  const plotLon = parseFloat("{{ selected_plot.centroid_lon }}");
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(miniMap);
+  if (!isNaN(plotLat) && !isNaN(plotLon)) {
+    const miniMap = L.map('plot-mini-map', { zoomControl: false, dragging: false, scrollWheelZoom: false }).setView([plotLat, plotLon], 14);
 
-  // Add marker
-  const marker = L.marker([plotLat, plotLon]).addTo(miniMap);
-  marker.bindPopup("<strong>{{ selected_plot.name }}</strong><br>Centroid Coordinate").openPopup();
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(miniMap);
 
-  // Draw polygon boundary if present
-  {% if selected_plot.boundary_geojson %}
-    const boundaryPoints = {{ selected_plot.boundary_geojson|safe }};
-    if (boundaryPoints && boundaryPoints.length > 2) {
-      const polygon = L.polygon(boundaryPoints, { color: '#2d6a4f', fillColor: '#52b788', fillOpacity: 0.4 }).addTo(miniMap);
-      miniMap.fitBounds(polygon.getBounds());
-    }
-  {% endif %}
+    // Add marker
+    const marker = L.marker([plotLat, plotLon]).addTo(miniMap);
+    marker.bindPopup("<strong>{{ selected_plot.name }}</strong><br>Centroid Coordinate").openPopup();
+
+    // Draw polygon boundary if present
+    {% if selected_plot.boundary_geojson %}
+      const boundaryPoints = {{ selected_plot.boundary_geojson|safe }};
+      if (Array.isArray(boundaryPoints) && boundaryPoints.length > 2) {
+        const polygon = L.polygon(boundaryPoints, { color: '#2d6a4f', fillColor: '#52b788', fillOpacity: 0.4 }).addTo(miniMap);
+        miniMap.fitBounds(polygon.getBounds());
+      }
+    {% endif %}
+
+    // Force Leaflet to recalculate tile positions after the card renders
+    setTimeout(function() { miniMap.invalidateSize(); }, 150);
+  }
 </script>
 {% endif %}
 {% endblock %}

@@ -22,98 +22,238 @@
         <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
           <h6 class="fw-bold mb-0 text-dark">
             <i class="bi bi-database me-2 text-primary"></i> Historic Meteorological Datasets
+            <span class="badge bg-light text-muted border ms-2 fw-normal" style="font-size:0.72rem;">Open-Meteo ERA5 Reanalysis</span>
           </h6>
-          <button class="btn btn-sm btn-outline-primary" onclick="alert('Dataset repository synchronized with Kenya regional stations.')">
-            <i class="bi bi-cloud-arrow-up me-1"></i> Sync External Feeds
-          </button>
+          <a href="/api/v1/climate/stations/" target="_blank" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-cloud-arrow-down me-1"></i> View Stations API
+          </a>
         </div>
         <div class="card-body p-4 pt-2">
+
+          {% if dataset_stats %}
           <div class="table-responsive">
             <table class="table table-hover align-middle small">
               <thead class="table-light">
                 <tr>
-                  <th>Dataset / Region</th>
+                  <th>Station / Region</th>
                   <th>Records</th>
-                  <th>Date Horizon</th>
+                  <th>Latest Reading</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
+                {% for ds in dataset_stats %}
                 <tr>
-                  <td><strong>Nakuru (Njoro / Mau Narok)</strong><br><span class="text-muted">Highland Convective Grid</span></td>
-                  <td>47,400</td>
-                  <td>2021-01 to 2026-06</td>
-                  <td><span class="badge bg-success">Active / Ingested</span></td>
-                  <td><a href="/api/v1/climate/records/?format=json" class="btn btn-xs btn-light border">Inspect</a></td>
+                  <td>
+                    <strong>{{ ds.station_name }}</strong><br>
+                    <span class="text-muted">{{ ds.county }}</span>
+                  </td>
+                  <td>
+                    {% if ds.record_count > 0 %}
+                      <strong>{{ ds.record_count|floatformat:"0" }}</strong>
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-muted" style="font-size:0.78rem;">
+                    {% if ds.latest_at %}{{ ds.latest_at|date:"Y-m-d H:i" }}{% else %}No data{% endif %}
+                  </td>
+                  <td>
+                    {% if ds.record_count > 0 %}
+                      <span class="badge bg-success">Ingested</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Awaiting Sync</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <button type="button"
+                            class="btn btn-xs btn-outline-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#inspectModal{{ ds.station_id }}"
+                            title="Inspect telemetry, stats and observations for {{ ds.station_name }}">
+                      <i class="bi bi-eye me-1"></i>Inspect
+                    </button>
+                  </td>
                 </tr>
-                <tr>
-                  <td><strong>Kericho (Central / Tea Belt)</strong><br><span class="text-muted">High Precipitation Zone</span></td>
-                  <td>47,400</td>
-                  <td>2021-01 to 2026-06</td>
-                  <td><span class="badge bg-success">Active / Ingested</span></td>
-                  <td><a href="/api/v1/climate/records/?format=json" class="btn btn-xs btn-light border">Inspect</a></td>
-                </tr>
-                <tr>
-                  <td><strong>Uasin Gishu (Eldoret Basin)</strong><br><span class="text-muted">Plateau Agro-Zone</span></td>
-                  <td>47,400</td>
-                  <td>2021-01 to 2026-06</td>
-                  <td><span class="badge bg-success">Active / Ingested</span></td>
-                  <td><a href="/api/v1/climate/records/?format=json" class="btn btn-xs btn-light border">Inspect</a></td>
-                </tr>
+                {% endfor %}
               </tbody>
             </table>
+          </div>
+
+          <!-- Modals for Dataset Inspection -->
+          {% for ds in dataset_stats %}
+          <div class="modal fade" id="inspectModal{{ ds.station_id }}" tabindex="-1" aria-labelledby="inspectModalLabel{{ ds.station_id }}" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+              <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header bg-light border-0 py-3 px-4">
+                  <div>
+                    <h6 class="modal-title fw-bold text-dark mb-0" id="inspectModalLabel{{ ds.station_id }}">
+                      <i class="bi bi-database-check text-primary me-2"></i>{{ ds.station_name }}
+                    </h6>
+                    <span class="text-muted small">{{ ds.county }} County &bull; Elevation: {{ ds.elevation_m|floatformat:"0" }}m ASL &bull; ({{ ds.latitude }}, {{ ds.longitude }})</span>
+                  </div>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                  <!-- Metrics overview cards -->
+                  <div class="row g-3 mb-3 text-center">
+                    <div class="col-sm-3 col-6">
+                      <div class="p-2 border rounded-3 bg-light">
+                        <div class="text-muted small">Total Records</div>
+                        <div class="fw-bold text-dark fs-5">{{ ds.record_count }}</div>
+                      </div>
+                    </div>
+                    <div class="col-sm-3 col-6">
+                      <div class="p-2 border rounded-3 bg-light">
+                        <div class="text-muted small">Mean Temp</div>
+                        <div class="fw-bold text-danger fs-5">{{ ds.avg_temp|default:"--" }}°C</div>
+                      </div>
+                    </div>
+                    <div class="col-sm-3 col-6">
+                      <div class="p-2 border rounded-3 bg-light">
+                        <div class="text-muted small">Mean Humidity</div>
+                        <div class="fw-bold text-primary fs-5">{{ ds.avg_humidity|default:"--" }}%</div>
+                      </div>
+                    </div>
+                    <div class="col-sm-3 col-6">
+                      <div class="p-2 border rounded-3 bg-light">
+                        <div class="text-muted small">Horizon</div>
+                        <div class="fw-bold text-success fs-6 mt-1">
+                          {% if ds.earliest_at %}{{ ds.earliest_at|date:"M Y" }} &rarr; {{ ds.latest_at|date:"M Y" }}{% else %}N/A{% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Recent Observation Samples -->
+                  <h6 class="fw-semibold small text-secondary mb-2">
+                    <i class="bi bi-clock-history me-1"></i> Recent Hourly Telemetry Observations (Preview)
+                  </h6>
+                  {% if ds.recent_samples %}
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered text-center small mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Timestamp (EAT)</th>
+                          <th>Temp (°C)</th>
+                          <th>Humidity (%)</th>
+                          <th>Precipitation (mm)</th>
+                          <th>Wind Speed (m/s)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for s in ds.recent_samples %}
+                        <tr>
+                          <td class="text-start">{{ s.recorded_at|date:"Y-m-d H:i" }}</td>
+                          <td class="text-danger fw-semibold">{{ s.temperature_c }}</td>
+                          <td class="text-primary">{{ s.humidity_percent }}</td>
+                          <td class="{% if s.precipitation_mm > 0 %}text-info fw-bold{% else %}text-muted{% endif %}">{{ s.precipitation_mm }}</td>
+                          <td>{{ s.wind_speed_ms }}</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  {% else %}
+                  <p class="text-muted small mb-0">No records available for this station yet.</p>
+                  {% endif %}
+
+                  <div class="alert alert-light border small mt-3 mb-0 text-muted py-2 px-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Hourly observational telemetry feeds directly into the feature engineering pipeline (lags 1h–168h, 72h rolling windows) for micro-climate calibration.
+                  </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-2 px-4 d-flex justify-content-between">
+                  <span class="text-muted small">Station ID: #{{ ds.station_id }}</span>
+                  <div class="d-flex gap-2">
+                    <a href="/admin/climate/climaterecord/?station__id__exact={{ ds.station_id }}"
+                       target="_blank"
+                       class="btn btn-sm btn-outline-dark">
+                      <i class="bi bi-table me-1"></i> Full Table in Django Admin
+                    </a>
+                    <a href="/api/v1/climate/records/?station_id={{ ds.station_id }}"
+                       target="_blank"
+                       class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-braces me-1"></i> REST API JSON Feed
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          {% else %}
+          <!-- No stations registered yet -->
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-database-x fs-2 d-block mb-2"></i>
+            <p class="small mb-1">No meteorological stations registered in the database yet.</p>
+            <p class="small mb-3">Stations and their historic ERA5 data are populated by running the seed command or fetching from Open-Meteo.</p>
+            <a href="/admin/climate/meteorologicalstation/add/" target="_blank" class="btn btn-sm btn-outline-primary me-2">
+              <i class="bi bi-plus-circle me-1"></i> Add Station
+            </a>
+            <a href="/api/v1/climate/stations/" target="_blank" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-broadcast me-1"></i> Stations API
+            </a>
+          </div>
+          {% endif %}
+
+          <div class="mt-2 small text-muted" style="font-size:0.76rem;">
+            <i class="bi bi-info-circle me-1"></i>
+            Data source: <strong>Open-Meteo ERA5 Reanalysis API</strong> — free, no API key required. Hourly resolution, 2021-present.
+            Inspect links open the Django admin table for that station's records.
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Retraining & Latency Monitoring Cards (Wireframe 4) -->
+    <!-- Colab GPU Training & Latency Monitoring Cards (Wireframe 4) -->
     <div class="col-lg-5">
       <div class="row g-3">
-        <!-- Retraining Trigger Card -->
+        <!-- Cloud GPU Training Card (Colab-only — no local training) -->
         <div class="col-12">
           <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h6 class="fw-bold mb-3 text-dark">
-              <i class="bi bi-arrow-repeat text-success me-2"></i> Regression Model Retraining
+              <i class="bi bi-gpu-card text-success me-2"></i> Model Training &amp; Weights Management
             </h6>
+
+            <!-- Active model info -->
             <div class="d-flex justify-content-between mb-2 small">
               <span class="text-muted">Active Model Version:</span>
               <strong class="text-success">{{ active_model.version_tag|default:"Hybrid-v1.0-prod" }}</strong>
             </div>
-            <div class="d-flex justify-content-between mb-3 small">
-              <span class="text-muted">Optimization Loss:</span>
-              <span>Mean Squared Error (MSE)</span>
+            <div class="d-flex justify-content-between mb-2 small">
+              <span class="text-muted">Architecture:</span>
+              <span>LSTM + XGBoost Hybrid Residual Stack</span>
             </div>
-            
-            <form id="retrainForm" onsubmit="triggerRetrain(event)">
-              <div class="mb-2">
-                <label class="form-label small fw-semibold">Target Agro-Region</label>
-                <select id="regionSelect" class="form-select form-select-sm">
-                  <option value="Nakuru_Njoro">Nakuru (Njoro Hub)</option>
-                  <option value="Kericho_Central">Kericho (Tea Belt)</option>
-                  <option value="Uasin_Gishu_Eldoret">Uasin Gishu (Eldoret)</option>
-                </select>
+            <div class="d-flex justify-content-between mb-3 small">
+              <span class="text-muted">Weights Location:</span>
+              <code class="small">ml_engine/weights/</code>
+            </div>
+
+            <!-- Info banner: why no local training -->
+            <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 small rounded-3 mb-3" style="font-size:0.78rem;">
+              <i class="bi bi-info-circle-fill text-info mt-1 flex-shrink-0"></i>
+              <div>
+                <strong>Local training is disabled.</strong><br>
+                Training the LSTM on CPU can take <strong>60–90+ minutes</strong> and blocks the server.
+                Use Google Colab (free T4 GPU) instead — training completes in ~8 minutes.
+                Upload the generated <code>weights/</code> folder to replace the served weights.
               </div>
-              <div class="mb-3">
-                <label class="form-label small fw-semibold">Dataset Sample Size</label>
-                <select id="recordsSelect" class="form-select form-select-sm">
-                  <option value="8760" selected>⚡ 1 Full Year / Fast (~8,760 records)</option>
-                  <option value="4380">⚡ 6 Months / Rapid (~4,380 records)</option>
-                  <option value="2190">⚡ 3 Months / Instant (~2,190 records)</option>
-                  <option value="47450">Full Multi-Year Archive (47,450 records)</option>
-                </select>
-                <div class="form-text text-muted" style="font-size: 0.72rem;">Selecting 1 year runs walk-forward validation in &lt; 30 seconds.</div>
-              </div>
-              <button type="submit" id="btnRetrain" class="btn btn-warning text-dark fw-bold w-100 py-2 shadow-sm">
-                <i class="bi bi-play-circle me-1"></i> Initiate Local Retraining
-              </button>
-              <a href="https://colab.research.google.com/github/KittoJoshua/Hyper-local-weather/blob/main/notebooks/train_in_colab.ipynb" target="_blank" class="btn btn-outline-dark btn-sm w-100 mt-2 py-2">
-                <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" class="me-1" style="vertical-align: middle;"> Launch Cloud GPU Training
-              </a>
-            </form>
-            <div id="retrainStatus" class="small mt-2 text-muted text-center" style="display: none;">
-              <span class="spinner-border spinner-border-sm text-warning me-1"></span> Training LSTM &amp; XGBoost models...
+            </div>
+
+            <!-- Colab launch button — correct notebook path at repo root -->
+            <a href="https://colab.research.google.com/github/KittoJoshua/Hyper-local-weather/blob/main/train_in_colab.ipynb"
+               target="_blank"
+               class="btn btn-dark w-100 py-2 fw-semibold shadow-sm mb-2">
+              <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" class="me-2" style="height:18px; vertical-align:middle;">
+              Open Training Notebook in Colab
+            </a>
+
+            <div class="text-muted small mt-1 text-center" style="font-size:0.73rem;">
+              <i class="bi bi-arrow-right-circle me-1"></i>
+              Run all cells → download <code>weights/</code> → place in <code>ml_engine/weights/</code> → restart server
             </div>
           </div>
         </div>
@@ -211,38 +351,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
-  function triggerRetrain(e) {
-    e.preventDefault();
-    const region = document.getElementById('regionSelect').value;
-    const records = document.getElementById('recordsSelect').value;
-    const btn = document.getElementById('btnRetrain');
-    const status = document.getElementById('retrainStatus');
-
-    btn.disabled = true;
-    status.style.display = 'block';
-
-    fetch('/api/v1/forecasts/retrain/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token }}'
-      },
-      body: JSON.stringify({ region: region, max_records: parseInt(records) })
-    })
-    .then(r => r.json())
-    .then(data => {
-      btn.disabled = false;
-      status.style.display = 'none';
-      alert('Model Retraining Complete! Benchmark scores updated.');
-      window.location.reload();
-    })
-    .catch(err => {
-      btn.disabled = false;
-      status.style.display = 'none';
-      alert('Retraining finished.');
-      window.location.reload();
-    });
-  }
-</script>
+{# No local training JS needed — model retraining is Colab-only #}
 {% endblock %}
